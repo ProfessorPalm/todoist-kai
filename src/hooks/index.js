@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import moment from "moment";
 import { firebase } from "../firebase";
 import { collatedTasksExist } from "../helpers";
-import diff from "jest-diff";
 
 export const useTasks = selectedProject => {
   const [tasks, setTasks] = useState([]);
@@ -16,7 +15,7 @@ export const useTasks = selectedProject => {
 
     unsubscribe =
       selectedProject && !collatedTasksExist(selectedProject)
-        ? unsubscribe == unsubscribe.where("projectId", "==", "selectedProject")
+        ? (unsubscribe = unsubscribe.where("projectId", "==", selectedProject))
         : selectedProject === "TODAY"
         ? (unsubscribe = unsubscribe.where(
             "date",
@@ -28,12 +27,10 @@ export const useTasks = selectedProject => {
         : unsubscribe;
 
     unsubscribe = unsubscribe.onSnapshot(snapshot => {
-      const newTasks = snapshot.docs.map(
-        task({
-          id: task.id,
-          ...task.data()
-        })
-      );
+      const newTasks = snapshot.docs.map(task => ({
+        id: task.id,
+        ...task.data()
+      }));
 
       setTasks(
         selectedProject === "NEXT_7"
@@ -44,9 +41,9 @@ export const useTasks = selectedProject => {
             )
           : newTasks.filter(task => task.archived !== true)
       );
-
       setArchivedTasks(newTasks.filter(task => task.archived !== false));
     });
+
     return () => unsubscribe();
   }, [selectedProject]);
 
@@ -68,6 +65,7 @@ export const useProjects = () => {
           ...project.data(),
           docId: project.id
         }));
+
         if (JSON.stringify(allProjects) !== JSON.stringify(projects)) {
           setProjects(allProjects);
         }
